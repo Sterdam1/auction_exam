@@ -7,6 +7,8 @@ import tg_bot
 from tg_bot import main_channel_lots, lots_bet, ready_lots
 from sql_request import db
 import schedule 
+import doc_gen
+
 
 def tg():
     runpy.run_module('tg_bot', {}, "__main__")
@@ -43,6 +45,10 @@ def check_to_delete_list():
                 lot_id = main_channel_lots['to_delete'][l][0]
                 
                 tg_bot.bot.send_message(usr, cap+'\n Вы выйграли аукцион. Свяжитесь с продавцом.')
+                date = datetime.now()
+                filepath = doc_gen.gen_default_doc(name=cap.split('\n')[0], date=date)
+                with open(filepath, 'rb') as doc:
+                    tg_bot.bot.send_document(usr, doc, caption="Документ")
 
                 money = lots_bet[int(main_channel_lots['to_delete'][l][0])]['bet']
                 seller = db.get_user_by_lot(int(main_channel_lots['to_delete'][l][0]))
