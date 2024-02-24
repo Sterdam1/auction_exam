@@ -11,7 +11,7 @@ TOKEN = '6417186164:AAFKXtgvEToBCuiNyTQ_hloO3fxDIkNUa2s'
 bot = telebot.TeleBot(TOKEN)
 
 main_channel = '@exam_auction'
-support_chat_id = -4172910552
+support_chat_id = -4036488176
 
 template = ["Название: ", "\nСтартовая цена: ", "\nПродавец: @", "\nАдрес лота: ", "\nОписание: ", "\nНачало аукциона: ", "\nОкончание аукциона: "]
 
@@ -187,7 +187,7 @@ if __name__ == '__main__':
         if call.data.split('-')[0] == 'dl':
             photos = gen_photos(ready_lots)
             photo_files = photos[int(call.data.split('-')[1])] # call.data.split('-')[1] = card id 
-            media_group = [telebot.types.InputMediaDocument(open(photo, 'rb')) for photo in photo_files[1:]]
+            media_group = [telebot.types.InputMediaPhoto(open(photo, 'rb'), ) for photo in photo_files[1:]]
             if media_group == None:
                 media = bot.send_message(call.message.chat.id, 'Нет дополнительных файлов.')
             media = bot.send_media_group(call.message.chat.id, media_group)
@@ -214,7 +214,7 @@ if __name__ == '__main__':
             photos = gen_photos(ready_lots)
             photo = photos[int(call.data.split('-')[1])][0]
             start_time = datetime.now()
-            end_time = datetime.now() + timedelta(seconds=20)
+            end_time = datetime.now() + timedelta(seconds=50)
 
 
             if call.message.caption.split(': ')[-1] != 'Через 1 день':
@@ -271,6 +271,13 @@ if __name__ == '__main__':
                         lots_bet[int(lot_id)] = {'bet': sessions[call.message.chat.id]['lots'][lot_id]['bet'],
                                                 'user_id': call.message.chat.id,
                                                 'user_username': call.from_user.username}
+                        
+                        for lot in main_channel_lots['to_delete']:
+                            if main_channel_lots['to_delete'][lot][0] == lot_id:
+                                bot.edit_message_caption(chat_id=main_channel, message_id=lot, 
+                                    caption=main_channel_lots['to_delete'][lot][2]+ \
+                                    f'\nСамая высокая ставка: {lots_bet[int(lot_id)]["bet"]} {lots_bet[int(lot_id)]["user_username"]}')
+                                break
                     else:
                         print(f'[Log bet]: ваша ставка {lots_bet[int(lot_id)]["bet"]} <')
 
