@@ -77,12 +77,9 @@ if __name__ == '__main__':
         return photo_dict
 
     def send_in_time(photo, caption, lot_id, end_time):
-        
         with open(photo, 'rb') as photo_file:
                     a = bot.send_photo(main_channel, photo_file, caption=caption, reply_markup=gen_keyb_card(lot_id))
                     main_channel_lots['to_delete'][a.message_id] = [lot_id, end_time, caption]
-                    print(main_channel_lots)
-                    sys.stdout.flush()
         return a
     
         
@@ -123,7 +120,7 @@ if __name__ == '__main__':
                                             'lots': {}}
                 cap = captions[lot_id] + '\n' + 'Ваша ставка: 0'
             else: 
-                cap = captions[lot_id] + '\n' + f"Ваша ставка {sessions[message.chat.id]['lots'][lot_id]}"
+                cap = captions[lot_id] + '\n' + f"Ваша ставка: {sessions[message.chat.id]['lots'][lot_id]}"
         
             with open(photos[lot_id][0], 'rb') as photo:
                 bot.send_photo(message.chat.id, photo, cap, reply_markup=gen_keyb_card_user(lot_id))
@@ -248,8 +245,6 @@ if __name__ == '__main__':
             cash['lots'].remove(call.message.message_id)
 
 
-
-
         # decline callback: decline lot and delete message. 
         # P.S. may be need to change or add smth
         elif call.data.split('-')[0] == 'decl':
@@ -263,51 +258,67 @@ if __name__ == '__main__':
             if lot_id in sessions[call.message.chat.id]['lots']:
                 if sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] != 0:
                     sessions[call.message.chat.id]['lots'][lot_id]['bet'] += sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] 
-                    sessions[call.message.chat.id]['balance'] -= sessions[call.message.chat.id]['lots'][lot_id]['bet']
-                    sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] = 0
+                    # sessions[call.message.chat.id]['balance'] -= sessions[call.message.chat.id]['lots'][lot_id]['bet']
+                    # sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] = 0
 
-                    if lots_bet[int(lot_id)]['bet'] < sessions[call.message.chat.id]['lots'][lot_id]['bet']:
-                        if lots_bet[int(lot_id)]['user_id']:
-                            if call.message.chat.id != lots_bet[int(lot_id)]['user_id']:
-                                bot.send_message(lots_bet[int(lot_id)]['user_id'], 'Вашу ставку перебили!')    
-                        
-                        lots_bet[int(lot_id)] = {'bet': sessions[call.message.chat.id]['lots'][lot_id]['bet'],
-                                                'user_id': call.message.chat.id,
-                                                'user_username': call.from_user.username}
-                                           
-                        for s in sessions:
-                            if s != call.message.chat.id:
-                                sessions[s]['balance'] += sessions[s][lot_id]['bet']
-                                sessions[s][lot_id]['bet'] = 0
+                    if sessions[call.message.chat.id]['lots'][lot_id]['bet'] > sessions[call.message.chat.id]['lots'][lot_id]['s_price']:
+                        if lots_bet[int(lot_id)]['bet'] < sessions[call.message.chat.id]['lots'][lot_id]['bet']:
+                            if lots_bet[int(lot_id)]['user_id']:
+                                if call.message.chat.id != lots_bet[int(lot_id)]['user_id']:
+                                    bot.send_message(lots_bet[int(lot_id)]['user_id'], 'Вашу ставку перебили!')    
+                            
+                            lots_bet[int(lot_id)] = {'bet': sessions[call.message.chat.id]['lots'][lot_id]['bet'],
+                                                    'user_id': call.message.chat.id,
+                                                    'user_username': call.from_user.username}
+                                                
+                            for s in sessions:
+                                if s != call.message.chat.id:
+                                    sessions[s]['balance'] += sessions[s]['lots'][lot_id]['bet']
+                                    sessions[s]['lots'][lot_id]['bet'] = 0
 
-                        for lot in main_channel_lots['to_delete']:
-                            if main_channel_lots['to_delete'][lot][0] == lot_id:
-                                bot.edit_message_caption(chat_id=main_channel, message_id=lot, 
-                                    caption=main_channel_lots['to_delete'][lot][2]+ \
-                                    f'\nСамая высокая ставка: {lots_bet[int(lot_id)]["bet"]} {lots_bet[int(lot_id)]["user_username"]}',
-                                    reply_markup=gen_keyb_card(lot_id))
-                                break
+                            for lot in main_channel_lots['to_delete']:
+                                if main_channel_lots['to_delete'][lot][0] == lot_id:
+                                    bot.edit_message_caption(chat_id=main_channel, message_id=lot, 
+                                        caption=main_channel_lots['to_delete'][lot][2]+ \
+                                        f'\nСамая высокая ставка: {lots_bet[int(lot_id)]["bet"]} {lots_bet[int(lot_id)]["user_username"]}',
+                                        reply_markup=gen_keyb_card(lot_id))
+                                    break
+                            
+                            sessions[call.message.chat.id]['balance'] -= sessions[call.message.chat.id]['lots'][lot_id]['bet']
+                            # sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] = 0
+
+                            cap = ': '.join(call.message.caption.split(': ')[:-1]) + \
+                                f": {str(sessions[call.message.chat.id]['lots'][lot_id]['bet'])}"
+
+                            bot.edit_message_caption(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                                    caption=cap,
+                                                    reply_markup=gen_keyb_card_user(lot_id))
+                        else:
+                            bot.send_message(call.message.chat.id, 'Ставка слишком мала чтоб перебить предыдущую.')
+                            sessions[call.message.chat.id]['lots'][lot_id]['bet'] = 0
+                            print(f'[Log bet]: ваша ставка {lots_bet[int(lot_id)]["bet"]} < чем прошлая')
                     else:
+                        sessions[call.message.chat.id]['lots'][lot_id]['bet'] = 0
+                        bot.send_message(call.message.chat.id, 'Ставка меньше чем стартовая цена.')
 
-                        print(f'[Log bet]: ваша ставка {lots_bet[int(lot_id)]["bet"]} < чем прошлая')
 
-                    cap = ': '.join(call.message.caption.split(': ')[:-1]) + \
-                        f": {str(sessions[call.message.chat.id]['lots'][lot_id]['bet'])}"
+                    # cap = ': '.join(call.message.caption.split(': ')[:-1]) + \
+                    #     f": {str(sessions[call.message.chat.id]['lots'][lot_id]['bet'])}"
 
-                    bot.edit_message_caption(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                            caption=cap,
-                                            reply_markup=gen_keyb_card_user(lot_id))
+                    # bot.edit_message_caption(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                    #                         caption=cap,
+                    #                         reply_markup=gen_keyb_card_user(lot_id))
 
         elif call.data.split('-')[0] == 'hbet':
             lot_id = call.data.split('-')[1]
-
+            start_price = call.message.caption.split('\n')[1].split(': ')[1]
             if lot_id not in sessions[call.message.chat.id]['lots']:
-                sessions[call.message.chat.id]['lots'][lot_id] = {'bet': 0, 'hid_bet': 0}
+                sessions[call.message.chat.id]['lots'][lot_id] = {'bet': 0, 'hid_bet': 0, 's_price': float(start_price)}
                 bet = sessions[call.message.chat.id]['lots'][lot_id]['hid_bet']
             else: 
-                bet = 0
+                bet = sessions[call.message.chat.id]['lots'][lot_id]['hid_bet']
             bot.send_message(call.message.chat.id, 
-                            f'Изменяйте скрытую ставку \nВаши ставка: {bet}', 
+                            f'Изменяйте скрытую ставку \nВаша ставка: {bet}', 
                             reply_markup=gen_keyb_bet(lot_id))
         
         elif call.data.split('-')[0] == 'b':
