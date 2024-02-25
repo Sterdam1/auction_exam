@@ -19,7 +19,7 @@ keyb_close = InlineKeyboardMarkup()
 keyb_close.add(InlineKeyboardButton('Закрыть', callback_data='close-close'))
 
 sessions = {}
-cash = {}
+cash = {'to_close': []}
 
 photos = {}
 captions = {}
@@ -185,10 +185,11 @@ if __name__ == '__main__':
             photos = gen_photos(ready_lots)
             photo_files = photos[int(call.data.split('-')[1])] # call.data.split('-')[1] = card id 
             media_group = [telebot.types.InputMediaPhoto(open(photo, 'rb'), ) for photo in photo_files[1:]]
-            if media_group == None:
-                media = bot.send_message(call.message.chat.id, 'Нет дополнительных файлов.')
-            media = bot.send_media_group(call.message.chat.id, media_group)
-            close = bot.send_message(call.message.chat.id, 'Понятно', reply_markup=keyb_close)
+            if media_group:
+                media = bot.send_media_group(call.message.chat.id, media_group)
+            else:
+                media = [bot.send_message(call.message.chat.id, 'Нет дополнительных файлов.')]
+            bot.send_message(call.message.chat.id, 'Понятно', reply_markup=keyb_close)
             
             if 'to_close' in cash:
                 for m in media:
@@ -201,6 +202,7 @@ if __name__ == '__main__':
         
         # close callback: delete messages with extra file for comfortability
         elif call.data.split('-')[0] == 'close' and call.data.split('-')[1] == 'close':
+            bot.delete_message(call.message.chat.id, call.message.message_id)
             if 'to_close' in cash:
                 for close in cash['to_close']:
                     bot.delete_message(chat_id=call.message.chat.id, message_id=close)
@@ -211,14 +213,13 @@ if __name__ == '__main__':
             photos = gen_photos(ready_lots)
             photo = photos[int(call.data.split('-')[1])][0]
             start_time = datetime.now()
-            end_time = datetime.now() + timedelta(minutes=5)
+            end_time = datetime.now() + timedelta(minutes=5)  # timedelta can be auction default time period
 
             if call.message.caption.split(': ')[-1] != 'Через 1 день':
                     end_time = datetime.strptime(call.message.caption.split(': ')[-1], '%d.%m.%Y, %H:%M:%S')
             
             if call.message.caption.split(': ')[-2].startswith('сразу после публикации'):
-                # if call.message.caption.split(': ')[-1] != 'Через 1 день':
-                #     end_time = datetime.strptime(call.message.caption.split(': ')[-1], '%Y-%m-%d %H:%M:%S')
+
                 cap = '\n'.join(call.message.caption.split('\n')[:-2]) + \
                     f'\nАункцион начался: {start_time.strftime("%d.%m.%Y, %H:%M:%S")}'+ \
                     f'\nАукнцион закончиться: {end_time.strftime("%d.%m.%Y, %H:%M:%S")}'
@@ -265,8 +266,8 @@ if __name__ == '__main__':
                         if lots_bet[int(lot_id)]['bet'] < sessions[call.message.chat.id]['lots'][lot_id]['bet']:
                             if lots_bet[int(lot_id)]['user_id']:
                                 if call.message.chat.id != lots_bet[int(lot_id)]['user_id']:
-                                    bot.send_message(lots_bet[int(lot_id)]['user_id'], 'Вашу ставку перебили!')    
-                            
+                                    bot.send_message(lots_bet[int(lot_id)]['user_id'], 'Вашу ставку перебили!', reply_markup=keyb_close )    
+                                
                             lots_bet[int(lot_id)] = {'bet': sessions[call.message.chat.id]['lots'][lot_id]['bet'],
                                                     'user_id': call.message.chat.id,
                                                     'user_username': call.from_user.username}
@@ -294,20 +295,12 @@ if __name__ == '__main__':
                                                     caption=cap,
                                                     reply_markup=gen_keyb_card_user(lot_id))
                         else:
-                            bot.send_message(call.message.chat.id, 'Ставка слишком мала чтоб перебить предыдущую.')
+                            bot.send_message(call.message.chat.id, 'Ставка слишком мала чтоб перебить предыдущую.', reply_markup=keyb_close)
                             sessions[call.message.chat.id]['lots'][lot_id]['bet'] = 0
                             print(f'[Log bet]: ваша ставка {lots_bet[int(lot_id)]["bet"]} < чем прошлая')
                     else:
                         sessions[call.message.chat.id]['lots'][lot_id]['bet'] = 0
-                        bot.send_message(call.message.chat.id, 'Ставка меньше чем стартовая цена.')
-
-
-                    # cap = ': '.join(call.message.caption.split(': ')[:-1]) + \
-                    #     f": {str(sessions[call.message.chat.id]['lots'][lot_id]['bet'])}"
-
-                    # bot.edit_message_caption(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                    #                         caption=cap,
-                    #                         reply_markup=gen_keyb_card_user(lot_id))
+                        bot.send_message(call.message.chat.id, 'Ставка меньше чем стартовая цена.', reply_markup=keyb_close)
 
         elif call.data.split('-')[0] == 'hbet':
             lot_id = call.data.split('-')[1]

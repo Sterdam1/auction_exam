@@ -27,8 +27,10 @@ def check_to_send_list():
                     
                     print(f'[Log send message]: card id={l} was send at {datetime.now()}')
                     
-                    temp.append(l)                   
-                    main_channel_lots['to_delete'][a.message_id] = datetime.now() + timedelta(seconds=20)
+                    temp.append(l) 
+                    
+                    end_time = a.caption.split('\n')[-2].split(': ')[1:][0]
+                    main_channel_lots['to_delete'][a.message_id] = datetime.strptime(end_time, '%d.%m.%Y, %H:%M:%S') # timedelta can be auction default time period
     for i in temp:
         main_channel_lots['to_send'].pop(i)
 
@@ -60,13 +62,10 @@ def check_to_delete_list():
             
     for i in temp:
         main_channel_lots['to_delete'].pop(i)
-    # print(f"Проверка списка... {datetime.now()}")
 
+schedule.every(1).hours.do(check_to_send_list)
+schedule.every(1).hours.do(check_to_delete_list)
 
-schedule.every(5).minutes.do(check_to_send_list)
-schedule.every(5).seconds.do(check_to_delete_list)
-
-# Бесконечный цикл для выполнения планировщика
 while True:
     schedule.run_pending()
     time.sleep(1)   
