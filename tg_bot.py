@@ -126,11 +126,11 @@ if __name__ == '__main__':
                 bot.send_photo(message.chat.id, photo, cap, reply_markup=gen_keyb_card_user(lot_id))
 
         elif message.text == '/balance' and message.chat.id != support_chat_id:
-            if message.chat.id in sessions:
-                bot.send_message(message.chat.id, f'Ваш баланс: {sessions[message.chat.id]["balance"]}')
-            elif message.chat.id not in sessions:
+            if message.chat.id not in sessions:
                 sessions[message.chat.id] = {'balance': 500,
                                             'lots': {}}
+            bot.send_message(message.chat.id, f'Ваш баланс: {sessions[message.chat.id]["balance"]}', reply_markup=keyb_close)
+            cash['to_close'].append(message.message_id)
                 
         elif message.text == '/report' and message.chat.id != support_chat_id:
             if message.chat.id not in sessions:

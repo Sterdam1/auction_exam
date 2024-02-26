@@ -45,7 +45,7 @@ def check_to_delete_list():
                 usr_name =  lots_bet[int(main_channel_lots['to_delete'][l][0])]['user_username']
                 cap = main_channel_lots['to_delete'][l][2]
                 lot_id = main_channel_lots['to_delete'][l][0]
-                
+
                 tg_bot.bot.send_message(usr, cap+'\n Вы выйграли аукцион. Свяжитесь с продавцом.')
                 date = datetime.now()
                 filepath = doc_gen.gen_default_doc(name=cap.split('\n')[0], date=date)
@@ -54,9 +54,10 @@ def check_to_delete_list():
 
                 money = lots_bet[int(main_channel_lots['to_delete'][l][0])]['bet']
                 seller = db.get_user_by_lot(int(main_channel_lots['to_delete'][l][0]))
-                db.history_insert(seller[0], usr_name, lot_id, money)
+                db.history_insert(seller[0], usr_name, lot_id, money, date)
                 money = money * 0.05
                 db.change_seller_balance(seller[0], money)
+                db.change_lot_status(lot_id)
                 
             temp.append(l)
             
