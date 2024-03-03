@@ -120,6 +120,7 @@ if __name__ == '__main__':
                                             'lots': {}}
                 cap = captions[lot_id] + '\n' + 'Ваша ставка: 0'
             else: 
+                # key error, need exra if but i cant add it
                 cap = captions[lot_id] + '\n' + f"Ваша ставка: {sessions[message.chat.id]['lots'][lot_id]}"
         
             with open(photos[lot_id][0], 'rb') as photo:
@@ -160,6 +161,8 @@ if __name__ == '__main__':
                     continue
                 cash['lots'] = [lot_card_id.message_id]
 
+    # in if message.text == '!cancel: need to delete messages for beauty
+
     def report1(message):
         if message.text == '!cancel':
             return
@@ -191,7 +194,7 @@ if __name__ == '__main__':
                 media = [bot.send_message(call.message.chat.id, 'Нет дополнительных файлов.')]
             bot.send_message(call.message.chat.id, 'Понятно', reply_markup=keyb_close)
             
-            if 'to_close' in cash:
+            if 'to_close' in cash: #Didnt fix exeption here, i know that there is one
                 for m in media:
                     cash['to_close'].append(m.message_id)
                 cash['to_close'].append(close.message_id)
@@ -258,11 +261,11 @@ if __name__ == '__main__':
             lot_id = call.data.split('-')[1]
             if lot_id in sessions[call.message.chat.id]['lots']:
                 if sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] != 0:
+                    # need to make bet = 0 to not double the bet with this button 
                     sessions[call.message.chat.id]['lots'][lot_id]['bet'] += sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] 
-                    # sessions[call.message.chat.id]['balance'] -= sessions[call.message.chat.id]['lots'][lot_id]['bet']
-                    # sessions[call.message.chat.id]['lots'][lot_id]['hid_bet'] = 0
-
-                    if sessions[call.message.chat.id]['lots'][lot_id]['bet'] > sessions[call.message.chat.id]['lots'][lot_id]['s_price']:
+                    
+                    # need to be >=
+                    if sessions[call.message.chat.id]['lots'][lot_id]['bet'] > sessions[call.message.chat.id]['lots'][lot_id]['s_price']: 
                         if lots_bet[int(lot_id)]['bet'] < sessions[call.message.chat.id]['lots'][lot_id]['bet']:
                             if lots_bet[int(lot_id)]['user_id']:
                                 if call.message.chat.id != lots_bet[int(lot_id)]['user_id']:
